@@ -37,12 +37,12 @@ def get_column_names(connection, table_name):
     return column_names
 
 # ______________ Get row from DataBase
-def retrieve_row(col_name, table_name, sensor_id, connection):
+def retrieve_row(col_name, table_name, col_identifier, sensor_id, connection):
     try:
         cursor = connection.cursor()
 
         # Query to retrieve a row based on a condition
-        query = sql.SQL("""SELECT tx.{} FROM {} tx WHERE tx.sensor_id = '{}'""".format(col_name, table_name, sensor_id))
+        query = sql.SQL("""SELECT tx.{} FROM {} tx WHERE tx.{} = '{}'""".format(col_name, table_name, col_identifier, sensor_id))
         cursor.execute(query)
         row = cursor.fetchone()
         cursor.close()
@@ -87,16 +87,16 @@ def save_table_csv(table_name, connection, file_path):
         print("Error: Unable to save data. {}".format(e))
 
 # ______________ Update value on table
-def update_table(connection, table_name, column_name, new_value, condition_value, data_type):
+def update_table(connection, table_name, column_name, new_value, col_identifier, condition_value, data_type):
     try:
         # Convert values to the expected types if necessary
         upd_statement = ""
         if data_type == "str":
-            upd_statement = "UPDATE {} SET {} = '{}' WHERE sensor_id = '{}';".format(table_name, column_name, new_value, condition_value)
+            upd_statement = "UPDATE {} SET {} = '{}' WHERE {} = '{}';".format(table_name, column_name, new_value, col_identifier, condition_value)
         elif data_type == "num":
-            upd_statement = "UPDATE {} SET {} = {} WHERE sensor_id = '{}';".format(table_name, column_name, new_value, condition_value)
+            upd_statement = "UPDATE {} SET {} = {} WHERE {} = '{}';".format(table_name, column_name, new_value, col_identifier, condition_value)
         else:
-            upd_statement = "UPDATE {} SET {} = null WHERE sensor_id = '{}';".format(table_name, column_name, new_value, condition_value)
+            upd_statement = "UPDATE {} SET {} = null WHERE {} = '{}';".format(table_name, column_name, new_value, col_identifier, condition_value)
 
         cursor = connection.cursor()
         cursor.execute(upd_statement)
@@ -137,7 +137,8 @@ Creado por DarwioDev""")
 
         if db_connection and engine:
             # Get DB table column names
-            table_name = os.environ['BD_TABLE_UPD_NAME']
+            table_name = os.environ['DB_TABLE_UPD_NAME']
+            col_id_name = os.environ['DB_TABLE_COL_IDENT']
             column_names = get_column_names(db_connection, table_name)
 
             # Save data of table to csv
@@ -159,7 +160,7 @@ Creado por DarwioDev""")
             # Comparar data del archivo excel con data de la base
             for row in range(start, len(my_df)):
                 # Obtener código de torre
-                curr_sensorid = my_df.at[row ,'sensor_id']
+                curr_sensorid = my_df.at[row ,col_id_name]
                 # Print info of row to compare
                 print("")
                 print("=" * 30)
@@ -175,7 +176,7 @@ Creado por DarwioDev""")
                 # Usar las columnas de interes para comparar
                 cols_upd = []
                 for col in column_names:
-                    resp = retrieve_row(col, table_name, curr_sensorid, db_connection)
+                    resp = retrieve_row(col, table_name, col_id_name, curr_sensorid, db_connection)
                     ps_resp = pd.Series(resp)
 
                     # Comprobar si son datos numericos
@@ -202,12 +203,12 @@ Creado por DarwioDev""")
                                 if str(value) != 'None' and str(value) != 'nan' and str(value) != 'NaT':
                                     # Valor numerico a actualizar
                                     if isinstance(value, (int, float)):
-                                        update_table(db_connection, table_name, key, value, curr_sensorid, 'num')
+                                        update_table(db_connection, table_name, key, value, col_id_name, curr_sensorid, 'num')
                                     else:
                                         # Valor tipo cadena
-                                        update_table(db_connection, table_name, key, value, curr_sensorid, 'str')
+                                        update_table(db_connection, table_name, key, value, col_id_name, curr_sensorid, 'str')
                                 else:
-                                    update_table(db_connection, table_name, key, value, curr_sensorid, 'null')
+                                    update_table(db_connection, table_name, key, value, col_id_name, curr_sensorid, 'null')
                             elif (user_input == 'S'):
                                 break
         else:
