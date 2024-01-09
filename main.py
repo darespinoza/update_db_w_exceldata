@@ -184,7 +184,6 @@ Creado por DarwioDev""")
                         # Comprobar si son strings
                         if str(ps_resp[0]).strip() != str(my_df.at[row ,col]).strip():
                             # Comprobar si son nulls
-                            # if ps_resp[0] != None and my_df.at[row ,col] != np.nan:
                             print("{} {} {}".format(add_tabs(col), add_tabs(ps_resp[0]), my_df.at[row ,col]))
                             cols_upd.append({col: my_df.at[row ,col]})
                 
